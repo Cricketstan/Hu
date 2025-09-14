@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Match Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- JWPlayer -->
+  <script src="https://cdn.jwplayer.com/libraries/IDzF9Zmk.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      padding: 10px 15px;
+      background: #111;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    #player {
+      flex: 1;
+    }
+    .error {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: red;
+      font-size: 18px;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header id="matchTitle">Loading...</header>
+  <div id="player"></div>
+  <div id="error" class="error" style="display:none;">⚠️ Failed to load stream.</div>
+
+  <script>
+    async function initPlayer() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const matchId = urlParams.get("id");
+      if (!matchId) {
+        document.getElementById("error").style.display = "block";
+        document.getElementById("error").innerText = "❌ No match ID provided.";
+        return;
+      }
+
+      try {
+        // fetch JSON
+        const response = await fetch("https://raw.githubusercontent.com/Odfinity/live-events/refs/heads/main/fancode/data.json");
+        const data = await response.json();
+        
+        // find match by id
+        const match = data.matches.find(m => m.match_id == matchId);
+        if (!match) {
+          document.getElementById("error").style.display = "block";
+          document.getElementById("error").innerText = "❌ Match not found.";
+          return;
+        }
+
+        // update header
+        document.getElementById("matchTitle").innerText = `${match.team_1} vs ${match.team_2} - ${match.event_name}`;
+
+        // pick stream url
+        const streamUrl = match.adfree_url || match.dai_url;
+        if (!streamUrl) {
+          document.getElementById("error").style.display = "block";
+          document.getElementById("error").innerText = "❌ Stream not available.";
+          return;
+        }
+
+        // init JWPlayer
+        jwplayer("player").setup({
+          file: streamUrl,
+          width: "100%",
+          aspectratio: "16:9",
+          autostart: true,
+          stretching: "uniform",
+          skin: { name: "seven" }
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("error").style.display = "block";
+        document.getElementById("error").innerText = "⚠️ Error loading data.";
+      }
+    }
+
+    initPlayer();
+  </script>
+</body>
+</html>
